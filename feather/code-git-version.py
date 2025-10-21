@@ -8,8 +8,6 @@ import digitalio
 import board
 import os
 
-# Import the Adafruit Bluetooth library.  Technical reference:
-# https://circuitpython.readthedocs.io/projects/ble/en/latest/api.html
 from adafruit_ble import BLERadio
 from adafruit_ble.advertising.standard import ProvideServicesAdvertisement
 from adafruit_ble.services.nordic import UARTService
@@ -44,40 +42,48 @@ sim_idx = 0
 
 try:
     if "sim_data.csv" in os.listdir("/"):
-        with open("/sim_data.csv") as  f:
+        with open("/sim_data.csv") as f:
             lines = f.readlines()
-        if len(lines) > 1:
-            header =  True
-            for line in lines:
-                # skip header or empty lines
-                if header:
-                    header = False
-                    continue
-                line = line.strip()
-                if not line:
-                    continue
-                parts = line.split(",")
-                if len(parts) < 2:
-                    continue
+
+        for i, line in enumerate(lines):
+            # skip header
+            if i == 0:
+                continue
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split(",")
+            if len(parts) >= 2:
                 try:
                     t = float(parts[0])
                     rh = float(parts[1])
                     SIM_ROWS.append((t, rh))
                 except ValueError:
                     pass
+
         if SIM_ROWS:
-            USE_SIMULATION = True
             print(f"Simulation enabled: {len(SIM_ROWS)} rows loaded.")
+        else:
+            USE_SIMULATION = False
+            print("sim_data.csv empty/invalid; using real sensors")
+
     else:
+        USE_SIMULATION = False
         print("No sim_data.csv found; using real sensors.")
 except Exception as e:
-    print("Error loading sim_data.csv:", e)
+    USE_SIMULATION = False
+    print("Error loading sim_data.csv; using real sensors. Err: ", e)
 
 # ----------- Timing setup ---------------------------
 # The sensor sampling rate is precisely regulated using the following timer variables.
 sampling_timer    = 0.0
 last_time         = time.monotonic()
-sampling_interval = 0.1   
+sampling_interval = 1.0     # 1 Hz  
+
+# Pre-init
+temp_c = None
+humidity_c = None
+pressure_hpa = None
 
 # ----------- Main loop ------------------------------------------
 while True:
@@ -88,15 +94,18 @@ while True:
     last_time = now
     sampling_timer -= interval
 
+    did_sample = False
     if sampling_timer < 0.0:
         sampling_timer += sampling_interval
+        did_sample = True
 
         #use dataset for simulation if available
         if USE_SIMULATION:
             temp_c, humidity_rh = SIM_ROWS[sim_idx]
             sim_idx = (sim_idx + 1) % len(SIM_ROWS)
         else:
-            # read sensors
+
+            # read temp + humidity sensors
             try:
                 temp_c = sht31.temperature
                 humidity_rh = sht31.relative_humidity
@@ -106,6 +115,7 @@ while True:
                 temp_c = None
                 humidity_rh = None
 
+        # read real pressure
         try: 
             pressure_hpa = bmp280.pressure
         except Exception as e:
@@ -123,12 +133,15 @@ while True:
         connected = True
         ledpin.value = True
         
-    if connected:
-        if not ble.connected:
+    if connected and not ble.connected:
             print("Connection lost.")
             connected = False
             advertised = False
             ledpin.value = False            
 
-            if (temp_c is not None) and (humidity_rh is not None) and (pressure_hpa is not None):
+    if connected and did_sample:
+        if (temp_c is not None) and (humidity_rh is not None) and (pressure_hpa is not None):
+            try: 
                 uart.write(b"%.3f,%.3f,%.3f\n" % (temp_c, humidity_rh, pressure_hpa))
+            except Exception as e:
+                print("UART write error:", e)
