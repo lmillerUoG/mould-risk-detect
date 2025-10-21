@@ -36,7 +36,7 @@ advertised = False
 connected  = False
 
 # ----------- Simulation setup ----------------------------
-USE_SIMULATION = True
+USE_SIMULATION = False
 SIM_ROWS = []
 sim_idx = 0
 
@@ -62,6 +62,7 @@ try:
                     pass
 
         if SIM_ROWS:
+            USE_SIMULATION = True
             print(f"Simulation enabled: {len(SIM_ROWS)} rows loaded.")
         else:
             USE_SIMULATION = False
