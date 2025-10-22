@@ -7,6 +7,7 @@ import time
 import digitalio
 import board
 import os
+import math
 
 from adafruit_ble import BLERadio
 from adafruit_ble.advertising.standard import ProvideServicesAdvertisement
@@ -19,6 +20,20 @@ import adafruit_sht31d
 # Initialize global variables for the main loop.
 ledpin= digitalio.DigitalInOut(board.BLUE_LED)
 ledpin.direction = digitalio.Direction.OUTPUT
+
+def set_led(mode):
+    """
+    LED rules:
+    on  - solid ON for HIGH risk
+    off - OFF for SAFE
+    blink - toggled each sample for WARN
+    """
+    if mode == "on":
+        ledpin.value = True
+    elif mode == "off":
+        ledpin.value = False
+    elif mode == "blink":
+        ledpin.value = not ledpin.value
 
 # ----------- I2C + sensors -----------------------
 i2c = board.I2C()                       # uses board.SCL and board.SDA
@@ -45,9 +60,8 @@ try:
         with open("/sim_data.csv") as f:
             lines = f.readlines()
 
-        for i, line in enumerate(lines):
-            # skip header
-            if i == 0:
+        for i, line in enumerate(lines):          
+            if i == 0:  # skip header
                 continue
             line = line.strip()
             if not line:
@@ -65,14 +79,11 @@ try:
             USE_SIMULATION = True
             print(f"Simulation enabled: {len(SIM_ROWS)} rows loaded.")
         else:
-            USE_SIMULATION = False
             print("sim_data.csv empty/invalid; using real sensors")
 
     else:
-        USE_SIMULATION = False
         print("No sim_data.csv found; using real sensors.")
 except Exception as e:
-    USE_SIMULATION = False
     print("Error loading sim_data.csv; using real sensors. Err: ", e)
 
 # ----------- Timing setup ---------------------------
@@ -81,9 +92,54 @@ sampling_timer    = 0.0
 last_time         = time.monotonic()
 sampling_interval = 1.0     # 1 Hz  
 
+# ----------- Dew point & Risk Config ---------------------------
+# Magnus constants for dew point
+A, B = 17.62, 243.12
+
+def dew_point_c(t_c, rh_pct):
+    """
+    Compute dew point from air temp and relative humidity
+    using Magnus-type formulation
+    """
+    # Bound RH to avoid log(0) and >100% anomalities
+    rh = max(1e-6, min(100.0, rh_pct))
+    gamma = math.log(rh/100.0) + (A * t_c) / (B + t_c)
+
+    return (B * gamma)/(A - gamma)
+
+def ema(prev, new, alpha=0.3):
+    """
+    Exponential Moving Average to smooth sensor noise
+    alpha ~ 0.3 gives moderate smoothing without excessive lag
+    """
+    if prev is None:
+        return new
+    else:
+        return (alpha * new + (1 - alpha) * prev)
+    
+# Risk thresholds
+RH_WARN = 60.0  # % RH
+RH_HIGH = 75.0  # % RH
+DPD_HIGH = 3.0  # °C (T - Td)
+
+# Persistence windows, mould growth needs time at high moisture
+PERSIST_WARN_S = 30 * 60        # 30 mins for WARN
+PERSIST_HIGH_S = 2 * 60 * 60    # 2 hrs for HIGH
+
+# ----------- State (smoothed) ------------------------------------------
+t_ema = None
+rh_ema = None
+td_ema = None
+dpd_ema = None
+
+# Persistence accumlators (seconds)
+warn_accum = 0.0
+high_accum = 0.0
+risk_state =  "SAFE"
+
 # Pre-init
 temp_c = None
-humidity_c = None
+humidity_rh = None
 pressure_hpa = None
 
 # ----------- Main loop ------------------------------------------
@@ -123,7 +179,18 @@ while True:
             print("BMP280 read error", e)
             pressure_hpa = None
 
-    # BLE state machine
+        # --- Calculations ---
+        # dew point (Td) & Dew-Point (DPD = T - Td)
+        if (temp_c is not None) and (humidity_rh is not None):
+            try:
+                td = dew_point_c(temp_c, humidity_rh)
+                dpd = temp_c - td 
+            except Exception as e:
+                print("Dew point calc error", e)
+                td = None
+                dpd = None
+
+    # --- BLE state machine ---
     if not advertised:
         ble.start_advertising(advertisement)
         print("Waiting for connection.")
