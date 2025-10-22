@@ -15,6 +15,22 @@ from adafruit_ble.services.nordic import UARTService
 
 import adafruit_sht31d
 
+# ----------- Config -----------------------
+DEVICE_ID = "21399066"
+FW_VERSION = 1      # packet schema version
+SAMPLE_HZ = 1.0     # sampling frequency
+EMA_ALPHA = 0.3     # smoothing factor
+
+# Risk thresholds
+RH_WARN = 60.0      # % RH
+RH_HIGH = 75.0      # % RH
+DPD_HIGH = 3.0      # °C (T - Td)
+
+# Persistence windows (seconds)
+PERSIST_WARN_S = 30 * 60        # 30 mins for WARN
+PERSIST_HIGH_S = 2 * 60 * 60    # 2 hrs for HIGH
+
+
 # ----------- LEDs -----------------------
 # Initialize global variables for the main loop.
 ledpin= digitalio.DigitalInOut(board.BLUE_LED)
@@ -40,13 +56,14 @@ sht31 = adafruit_sht31d.SHT31D(i2c)     # temp + humidity
 
 # ----------- BLE setup ----------------------------
 ble = BLERadio()
-ble.name = "21399066"
+ble.name = DEVICE_ID
 uart = UARTService()
 advertisement = ProvideServicesAdvertisement(uart)
 
 # Flags for detecting state changes.
 advertised = False
 connected  = False
+header_sent = False
 
 # ----------- Simulation setup ----------------------------
 USE_SIMULATION = False
@@ -88,10 +105,11 @@ except Exception as e:
 # The sensor sampling rate is precisely regulated using the following timer variables.
 sampling_timer    = 0.0
 last_time         = time.monotonic()
-sampling_interval = 1.0     # 1 Hz  
+sampling_interval = 1.0 / SAMPLE_HZ
+boot_time = last_time   # for relative timestamps
 
 # ----------- Dew point & Risk Config ---------------------------
-# Magnus constants for dew point
+# Magnus constants for °C 
 A, B = 17.62, 243.12
 
 def dew_point_c(t_c, rh_pct):
@@ -99,7 +117,7 @@ def dew_point_c(t_c, rh_pct):
     Compute dew point from air temp and relative humidity
     using Magnus-type formulation
     """
-    # Bound RH to avoid log(0) and >100% anomalities
+    # Bound RH to avoid log(0) and >100% anormalities
     rh = max(1e-6, min(100.0, rh_pct))
     gamma = math.log(rh/100.0) + (A * t_c) / (B + t_c)
 
@@ -115,14 +133,6 @@ def ema(prev, new, alpha=0.3):
     else:
         return (alpha * new + (1 - alpha) * prev)
     
-# Risk thresholds
-RH_WARN = 60.0  # % RH
-RH_HIGH = 75.0  # % RH
-DPD_HIGH = 3.0  # °C (T - Td)
-
-# Persistence windows, mould growth needs time at high moisture
-PERSIST_WARN_S = 30 * 60        # 30 mins for WARN
-PERSIST_HIGH_S = 2 * 60 * 60    # 2 hrs for HIGH
 
 # ----------- State (smoothed) ------------------------------------------
 t_ema = None
@@ -139,12 +149,20 @@ risk_state =  "SAFE"
 temp_c = None
 humidity_rh = None
 
+# packet seq
+seq = 0
+
 # ----------- Main loop ------------------------------------------
 while True:
 
     # wait until sampling interval has elapsed
     now = time.monotonic()
+
+    # clamp extreme gaps to avoid big accumulator jumps
     interval = now - last_time
+    if interval > 5 * sampling_interval:
+        interval = sampling_interval
+
     last_time = now
     sampling_timer -= interval
 
@@ -171,6 +189,8 @@ while True:
 
         # --- Calculations ---
         # dew point (Td) & Dew-Point (DPD = T - Td)
+        td = None
+        dpd = None
         if (temp_c is not None) and (humidity_rh is not None):
             try:
                 td = dew_point_c(temp_c, humidity_rh)
@@ -181,21 +201,21 @@ while True:
                 dpd = None
 
             # smooth signals to avoid twitchy alerts due to momentary spikes
-            t_ema = ema(t_ema, temp_c)
-            rh_ema = ema(rh_ema, humidity_rh)
-
+            if temp_c is not None:
+                t_ema = ema(t_ema, temp_c)
+            if humidity_rh is not None:
+                rh_ema = ema(rh_ema, humidity_rh)
             if td_ema is not None:
                 td_ema = ema(td_ema, td)
-
             if dpd is not None:
                 dpd_ema = ema(dpd_ema, dpd)
             
             # --- Persistance logic ---
                 # WARN: rh sustained above RH_WARN
-                # HIGH: rh sustained above RH_HIGH or DPD sustained <= DPD_HIGH
+                # HIGH: rh sustained above RH_HIGH or DPD sustained <= DPD_HIGH (if available)
             if (rh_ema is not None) and (dpd_ema is not None):
                 cond_warn = (rh_ema >= RH_WARN)
-                cond_high = (rh_ema >= RH_HIGH) or (dpd_ema <= DPD_HIGH)
+                cond_high = (rh_ema >= RH_HIGH) or ((dpd_ema is not None) and (dpd_ema <= DPD_HIGH))
 
                 # accumulate while condition holds
                 # decay while not
@@ -221,7 +241,7 @@ while True:
                 if risk_state == "HIGH":
                     set_led("on")
                 elif risk_state == "WARN":
-                    set_led("blink") #toggles at 1 Hz
+                    set_led("blink")
                 else:
                     set_led("off")
 
@@ -250,7 +270,23 @@ while True:
             rh_out = t_ema if rh_ema is not None else humidity_rh
             td_out = td_ema if td_ema is not None else dew_point_c(temp_c, humidity_rh)
             dpd_out = dpd_ema if dpd_ema is not None else (t_out - td_out)
+
+            # metadata
+            ts_s = now - boot_time
+            seq += 1
+            
+            if risk_state == "HIGH":
+                risk_flag = 2
+            elif risk_state == "WARN":
+                risk_flag = 1
+            else:
+                risk_flag = 0
+
             try: 
-                uart.write(b"%.3f,%.3f,%.3f,%.3f\n" % (t_out, rh_out, td_out, dpd_out))
+                # send header once afer connect
+                if not header_sent:
+                    uart.write("v,device_id,seq,ts_s,t_c,rh_pct,td_c,dpd_c,risk")
+                    head_sent = True
+                uart.write(b"%d,%s,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%d\n" % (FW_VERSION, DEVICE_ID, ts_s, t_out, rh_out, td_out, dpd_out, risk_flag))
             except Exception as e:
                 print("UART write error:", e)
