@@ -190,6 +190,56 @@ while True:
                 td = None
                 dpd = None
 
+            # smooth signals to avoid twitchy alerts due to momentary spikes
+            t_ema = ema(t_ema, temp_c)
+            rh_ema = ema(rh_ema, humidity_rh)
+
+            if td_ema is not None:
+                td_ema = ema(td_ema, td)
+            else:
+                td_ema
+
+            if dpd is not None:
+                dpd_ema = ema(dpd_ema, dpd)
+            else:
+                dpd_ema
+            
+            # --- Persistance logic ---
+                # WARN: rh sustained above RH_WARN
+                # HIGH: rh sustained above RH_HIGH or DPD sustained <= DPD_HIGH
+            if (rh_ema is not None) and (dpd is not None):
+                cond_warn = (rh_ema >= RH_WARN)
+                cond_high = (rh_ema >= RH_HIGH) or (dpd_ema <= DPD_HIGH)
+
+                # accumulate while condition holds
+                # decay while not
+                if cond_warn:
+                    warn_accum = max(0.0, warn_accum + interval)
+                else:
+                    warn_accum = max(0.0, high_accum - interval)
+
+                if cond_high:
+                    high_accum = max(0.0, high_accum + interval)
+                else:
+                    high_accum = max(0.0, high_accum - interval)
+                
+                # state transition
+                if high_accum >= PERSIST_HIGH_S:
+                    risk_state = "HIGH"
+                elif warn_accum >=  PERSIST_WARN_S:
+                    risk_state = "WARN"
+                else:
+                    risk_state = "SAFE"
+
+                # set LED per state
+                if risk_state == "HIGH":
+                    set_led("on")
+                elif risk_state == "WARN":
+                    set_led("blink") #toggles at 1 Hz
+                else:
+                    set_led("off")
+
+
     # --- BLE state machine ---
     if not advertised:
         ble.start_advertising(advertisement)
