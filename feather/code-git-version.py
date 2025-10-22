@@ -13,7 +13,6 @@ from adafruit_ble import BLERadio
 from adafruit_ble.advertising.standard import ProvideServicesAdvertisement
 from adafruit_ble.services.nordic import UARTService
 
-from adafruit_bmp280 import Adafruit_BMP280_I2C
 import adafruit_sht31d
 
 # ----------- LEDs -----------------------
@@ -37,7 +36,6 @@ def set_led(mode):
 
 # ----------- I2C + sensors -----------------------
 i2c = board.I2C()                       # uses board.SCL and board.SDA
-bmp280 = Adafruit_BMP280_I2C(i2c)       # pressure + temp (not used for temp here)
 sht31 = adafruit_sht31d.SHT31D(i2c)     # temp + humidity
 
 # ----------- BLE setup ----------------------------
@@ -140,7 +138,6 @@ risk_state =  "SAFE"
 # Pre-init
 temp_c = None
 humidity_rh = None
-pressure_hpa = None
 
 # ----------- Main loop ------------------------------------------
 while True:
@@ -171,13 +168,6 @@ while True:
                 print("SHT31 read error:", e)
                 temp_c = None
                 humidity_rh = None
-
-        # read real pressure
-        try: 
-            pressure_hpa = bmp280.pressure
-        except Exception as e:
-            print("BMP280 read error", e)
-            pressure_hpa = None
 
         # --- Calculations ---
         # dew point (Td) & Dew-Point (DPD = T - Td)
@@ -254,7 +244,7 @@ while True:
             ledpin.value = False            
 
     if connected and did_sample:
-        if (temp_c is not None) and (humidity_rh is not None) and (pressure_hpa is not None):
+        if (temp_c is not None) and (humidity_rh is not None):
             #use smoothed values when available
             t_out = t_ema if t_ema is not None else temp_c
             rh_out = t_ema if rh_ema is not None else humidity_rh
