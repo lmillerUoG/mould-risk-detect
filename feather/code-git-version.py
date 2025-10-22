@@ -196,18 +196,14 @@ while True:
 
             if td_ema is not None:
                 td_ema = ema(td_ema, td)
-            else:
-                td_ema
 
             if dpd is not None:
                 dpd_ema = ema(dpd_ema, dpd)
-            else:
-                dpd_ema
             
             # --- Persistance logic ---
                 # WARN: rh sustained above RH_WARN
                 # HIGH: rh sustained above RH_HIGH or DPD sustained <= DPD_HIGH
-            if (rh_ema is not None) and (dpd is not None):
+            if (rh_ema is not None) and (dpd_ema is not None):
                 cond_warn = (rh_ema >= RH_WARN)
                 cond_high = (rh_ema >= RH_HIGH) or (dpd_ema <= DPD_HIGH)
 
@@ -216,7 +212,7 @@ while True:
                 if cond_warn:
                     warn_accum = max(0.0, warn_accum + interval)
                 else:
-                    warn_accum = max(0.0, high_accum - interval)
+                    warn_accum = max(0.0, warn_accum - interval)
 
                 if cond_high:
                     high_accum = max(0.0, high_accum + interval)
@@ -259,7 +255,12 @@ while True:
 
     if connected and did_sample:
         if (temp_c is not None) and (humidity_rh is not None) and (pressure_hpa is not None):
+            #use smoothed values when available
+            t_out = t_ema if t_ema is not None else temp_c
+            rh_out = t_ema if rh_ema is not None else humidity_rh
+            td_out = td_ema if td_ema is not None else dew_point_c(temp_c, humidity_rh)
+            dpd_out = dpd_ema if dpd_ema is not None else (t_out - td_out)
             try: 
-                uart.write(b"%.3f,%.3f,%.3f\n" % (temp_c, humidity_rh, pressure_hpa))
+                uart.write(b"%.3f,%.3f,%.3f,%.3f\n" % (t_out, rh_out, td_out, dpd_out))
             except Exception as e:
                 print("UART write error:", e)
