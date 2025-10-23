@@ -32,8 +32,8 @@ DEMO_MODE = True
 
 # Persistence windows (seconds)
 if DEMO_MODE:
-    PERSIST_WARN_S = 1 * 60    # 5 mins for WARN
-    PERSIST_HIGH_S = 5 * 60    # 15 mins for HIGH
+    PERSIST_WARN_S = 1 * 60    # 1 min for WARN
+    PERSIST_HIGH_S = 5 * 60    # 5 mins for HIGH
 else:
     PERSIST_WARN_S = 30 * 60        # 30 mins for WARN
     PERSIST_HIGH_S = 2 * 60 * 60    # 2 hrs for HIGH
@@ -234,40 +234,40 @@ while True:
                 t_ref = temp_c
             
             rh_high_dyn = rh_equiv_for_dpd(t_ref, DPD_HIGH)
-            
-            if (rh_ema is not None):
-                cond_warn = (rh_ema >= RH_WARN)
 
-            if (rh_ema is not None) and (dpd_ema is not None):
-                cond_high = (rh_ema >= rh_high_dyn) or ((dpd_ema is not None) and (dpd_ema <= DPD_HIGH))
+            # compute conditions
+            cond_warn = (rh_ema is not None) and (rh_ema >= RH_WARN)
+            cond_high_rh = (rh_ema is not None) and (rh_ema >= rh_high_dyn)
+            cond_high_dpd = (dpd_ema is not None) and (dpd_ema <= DPD_HIGH)
+            cond_high = cond_high_rh or cond_high_dpd
 
-                # accumulate while condition holds
-                # decay while not
-                if cond_warn:
-                    warn_accum = max(0.0, min(PERSIST_WARN_S, warn_accum + interval))
-                else:
-                    warn_accum = max(0.0, min(PERSIST_WARN_S, warn_accum - interval))
+            # accumulate while condition holds
+            # decay while not
+            if cond_warn:
+                warn_accum = max(0.0, min(PERSIST_WARN_S, warn_accum + interval))
+            else:
+                warn_accum = max(0.0, min(PERSIST_WARN_S, warn_accum - interval))
 
-                if cond_high:
-                    high_accum = max(0.0, min(PERSIST_HIGH_S, high_accum + interval))
-                else:
-                    high_accum = max(0.0, min(PERSIST_HIGH_S, high_accum - interval))
+            if cond_high:
+                high_accum = max(0.0, min(PERSIST_HIGH_S, high_accum + interval))
+            else:
+                high_accum = max(0.0, min(PERSIST_HIGH_S, high_accum - interval))
                 
-                # state transition
-                if high_accum >= PERSIST_HIGH_S:
-                    risk_state = "HIGH"
-                elif warn_accum >=  PERSIST_WARN_S:
-                    risk_state = "WARN"
-                else:
-                    risk_state = "SAFE"
+            # state transition
+            if high_accum >= PERSIST_HIGH_S:
+                risk_state = "HIGH"
+            elif warn_accum >=  PERSIST_WARN_S:
+                risk_state = "WARN"
+            else:
+                risk_state = "SAFE"
 
-                # set LED per state
-                if risk_state == "HIGH":
-                    set_led("on")
-                elif risk_state == "WARN":
-                    set_led("blink")
-                else:
-                    set_led("off")
+            # set LED per state
+            if risk_state == "HIGH":
+                set_led("on")
+            elif risk_state == "WARN":
+                set_led("blink")
+            else:
+                set_led("off")
 
 
     # --- BLE state machine ---
