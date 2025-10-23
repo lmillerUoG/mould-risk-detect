@@ -25,9 +25,18 @@ RH_WARN = 60.0      # % RH
 # note: rh high has been made dynamic to be equivalent to DPD_HIGH
 DPD_HIGH = 3.0      # °C (T - Td)
 
+
+
+# ----------- Demo Mode/ Production Mode -----------------------
+DEMO_MODE = True
+
 # Persistence windows (seconds)
-PERSIST_WARN_S = 30 * 60        # 30 mins for WARN
-PERSIST_HIGH_S = 2 * 60 * 60    # 2 hrs for HIGH
+if DEMO_MODE:
+    PERSIST_WARN_S = 1 * 60    # 5 mins for WARN
+    PERSIST_HIGH_S = 5 * 60    # 15 mins for HIGH
+else:
+    PERSIST_WARN_S = 30 * 60        # 30 mins for WARN
+    PERSIST_HIGH_S = 2 * 60 * 60    # 2 hrs for HIGH
 
 # ----------- LEDs -----------------------
 # Initialize global variables for the main loop.
