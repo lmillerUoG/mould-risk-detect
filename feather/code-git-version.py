@@ -103,20 +103,20 @@ except Exception as e:
 sampling_timer    = 0.0
 last_time         = time.monotonic()
 sampling_interval = 1.0 / SAMPLE_HZ
-boot_time = last_time   # for relative timestamps
 
 # ----------- Dew point & Risk Config ---------------------------
 # Magnus constants for °C 
 A, B = 17.62, 243.12
 
-def rh_equiv_dpd(t_c, dpd):
+def rh_equiv_for_dpd(t_c, dpd):
     """
     RH (%) that gives dew point
     """
     td = t_c - dpd
     gamma = (A * td) / (B + td) - (A * t_c) / (B + t_c)
+    rh = 100 * math.exp(gamma)
 
-    return 100 * math.exp(gamma)
+    return max(0.0, min(100.0, rh))
 
 def dew_point_c(t_c, rh_pct):
     """
@@ -129,7 +129,7 @@ def dew_point_c(t_c, rh_pct):
 
     return (B * gamma)/(A - gamma)
 
-def ema(prev, new, alpha=0.3):
+def ema(prev, new, alpha=EMA_ALPHA):
     """
     Exponential Moving Average to smooth sensor noise
     alpha ~ 0.3 gives moderate smoothing without excessive lag
@@ -224,10 +224,12 @@ while True:
             else:
                 t_ref = temp_c
             
-            rh_high_dyn = rh_equiv_dpd(t_ref, DPD_HIGH)
+            rh_high_dyn = rh_equiv_for_dpd(t_ref, DPD_HIGH)
             
-            if (rh_ema is not None) and (dpd_ema is not None):
+            if (rh_ema is not None):
                 cond_warn = (rh_ema >= RH_WARN)
+
+            if (rh_ema is not None) and (dpd_ema is not None):
                 cond_high = (rh_ema >= rh_high_dyn) or ((dpd_ema is not None) and (dpd_ema <= DPD_HIGH))
 
                 # accumulate while condition holds
