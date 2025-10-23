@@ -22,7 +22,7 @@ EMA_ALPHA = 0.3     # smoothing factor
 
 # Risk thresholds
 RH_WARN = 60.0      # % RH
-RH_HIGH = 75.0      # % RH
+# note: rh high has been made dynamic to be equivalent to DPD_HIGH
 DPD_HIGH = 3.0      # °C (T - Td)
 
 # Persistence windows (seconds)
@@ -108,6 +108,15 @@ boot_time = last_time   # for relative timestamps
 # ----------- Dew point & Risk Config ---------------------------
 # Magnus constants for °C 
 A, B = 17.62, 243.12
+
+def rh_equiv_dpd(t_c, dpd):
+    """
+    RH (%) that gives dew point
+    """
+    td = t_c - dpd
+    gamma = (A * td) / (B + td) - (A * t_c) / (B + t_c)
+
+    return 100 * math.exp(gamma)
 
 def dew_point_c(t_c, rh_pct):
     """
@@ -208,21 +217,30 @@ while True:
             # --- Persistance logic ---
                 # WARN: rh sustained above RH_WARN
                 # HIGH: rh sustained above RH_HIGH or DPD sustained <= DPD_HIGH (if available)
+            
+            # RH_HIGH replaced by rh_high_dyn to keep equivalent to DPD_HIGH
+            if t_ema is not None:
+                t_ref = t_ema
+            else:
+                t_ref = temp_c
+            
+            rh_high_dyn = rh_equiv_dpd(t_ref, DPD_HIGH)
+            
             if (rh_ema is not None) and (dpd_ema is not None):
                 cond_warn = (rh_ema >= RH_WARN)
-                cond_high = (rh_ema >= RH_HIGH) or ((dpd_ema is not None) and (dpd_ema <= DPD_HIGH))
+                cond_high = (rh_ema >= rh_high_dyn) or ((dpd_ema is not None) and (dpd_ema <= DPD_HIGH))
 
                 # accumulate while condition holds
                 # decay while not
                 if cond_warn:
-                    warn_accum = max(0.0, warn_accum + interval)
+                    warn_accum = max(0.0, min(PERSIST_WARN_S, warn_accum + interval))
                 else:
-                    warn_accum = max(0.0, warn_accum - interval)
+                    warn_accum = max(0.0, min(PERSIST_WARN_S, warn_accum - interval))
 
                 if cond_high:
-                    high_accum = max(0.0, high_accum + interval)
+                    high_accum = max(0.0, min(PERSIST_HIGH_S, high_accum + interval))
                 else:
-                    high_accum = max(0.0, high_accum - interval)
+                    high_accum = max(0.0, min(PERSIST_HIGH_S, high_accum - interval))
                 
                 # state transition
                 if high_accum >= PERSIST_HIGH_S:
@@ -250,13 +268,11 @@ while True:
     if not connected and ble.connected:
         print("Connection received.")
         connected = True
-        ledpin.value = True
         
     if connected and not ble.connected:
             print("Connection lost.")
             connected = False
             advertised = False
-            ledpin.value = False            
 
     if connected and did_sample:
         if (temp_c is not None) and (humidity_rh is not None):
