@@ -17,7 +17,6 @@ import adafruit_sht31d
 
 # ----------- Config -----------------------
 DEVICE_ID = "21399066"
-FW_VERSION = 1      # packet schema version
 SAMPLE_HZ = 1.0     # sampling frequency
 EMA_ALPHA = 0.3     # smoothing factor
 
@@ -29,7 +28,6 @@ DPD_HIGH = 3.0      # °C (T - Td)
 # Persistence windows (seconds)
 PERSIST_WARN_S = 30 * 60        # 30 mins for WARN
 PERSIST_HIGH_S = 2 * 60 * 60    # 2 hrs for HIGH
-
 
 # ----------- LEDs -----------------------
 # Initialize global variables for the main loop.
@@ -63,7 +61,6 @@ advertisement = ProvideServicesAdvertisement(uart)
 # Flags for detecting state changes.
 advertised = False
 connected  = False
-header_sent = False
 
 # ----------- Simulation setup ----------------------------
 USE_SIMULATION = False
@@ -149,8 +146,6 @@ risk_state =  "SAFE"
 temp_c = None
 humidity_rh = None
 
-# packet seq
-seq = 0
 
 # ----------- Main loop ------------------------------------------
 while True:
@@ -205,7 +200,7 @@ while True:
                 t_ema = ema(t_ema, temp_c)
             if humidity_rh is not None:
                 rh_ema = ema(rh_ema, humidity_rh)
-            if td_ema is not None:
+            if td is not None:
                 td_ema = ema(td_ema, td)
             if dpd is not None:
                 dpd_ema = ema(dpd_ema, dpd)
@@ -267,13 +262,10 @@ while True:
         if (temp_c is not None) and (humidity_rh is not None):
             #use smoothed values when available
             t_out = t_ema if t_ema is not None else temp_c
-            rh_out = t_ema if rh_ema is not None else humidity_rh
+            rh_out = rh_ema if rh_ema is not None else humidity_rh
             td_out = td_ema if td_ema is not None else dew_point_c(temp_c, humidity_rh)
             dpd_out = dpd_ema if dpd_ema is not None else (t_out - td_out)
 
-            # metadata
-            ts_s = now - boot_time
-            seq += 1
             
             if risk_state == "HIGH":
                 risk_flag = 2
@@ -283,10 +275,6 @@ while True:
                 risk_flag = 0
 
             try: 
-                # send header once afer connect
-                if not header_sent:
-                    uart.write("v,device_id,seq,ts_s,t_c,rh_pct,td_c,dpd_c,risk")
-                    head_sent = True
-                uart.write(b"%d,%s,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%d\n" % (FW_VERSION, DEVICE_ID, ts_s, t_out, rh_out, td_out, dpd_out, risk_flag))
+                uart.write(b"%.3f,%.3f,%.3f,%.3f,%d\n" % (t_out, rh_out, td_out, dpd_out, risk_flag))
             except Exception as e:
                 print("UART write error:", e)
