@@ -21,7 +21,7 @@ with open(OUT_FILE, "w", newline="") as f:
             line = ser.readline().decode("utf-8", "ignore").strip()
             if not line:
                 continue
-            parts = line.split(";")
+            parts = line.split(",")
             if len(parts) == 5:
                 try:
                     t, rh, td, dpd, risk = parts
