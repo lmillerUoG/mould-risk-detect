@@ -302,6 +302,12 @@ while True:
                 risk_flag = 0
 
             try: 
-                uart.write(b"%.3f,%.3f,%.3f,%.3f,%d\n" % (t_out, rh_out, td_out, dpd_out, risk_flag))
+                #BLE UART
+                #uart.write(b"%.3f,%.3f,%.3f,%.3f,%d\n" % (t_out, rh_out, td_out, dpd_out, risk_flag))
+
+                # USB serial print
+                print("{:.3f},{:.3f},{:.3f},{:.3f},{}".format(t_out, rh_out, td_out, dpd_out, risk_flag))
             except Exception as e:
-                print("UART write error:", e)
+                #print("UART write error:", e)
+
+                print("USB serial write error:", e)
