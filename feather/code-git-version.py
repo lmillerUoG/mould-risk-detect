@@ -114,15 +114,10 @@ humidity_rh = None
 
 # ----------- Main loop ------------------------------------------
 while True:
-
-    # wait until sampling interval has elapsed
     now = time.monotonic()
-
-    # clamp extreme gaps to avoid big accumulator jumps
     interval = now - last_time
     if interval > 5 * sampling_interval:
         interval = sampling_interval
-
     last_time = now
     sampling_timer -= interval
 
@@ -131,22 +126,23 @@ while True:
         sampling_timer += sampling_interval
         did_sample = True
 
-        #use dataset for simulation if available
+        # choose data source
         if USE_SIMULATION:
-            temp_c, humidity_rh = SIM_ROWS[sim_idx]
-            sim_idx = (sim_idx + 1) % len(SIM_ROWS)
+            row = sim_next_row()
+            if row:
+                temp_c, humidity_rh = row
+            else:
+                temp_c = None
+                humidity_rh = None
         else:
-
-            # read temp + humidity sensors
             try:
                 temp_c = sht31.temperature
                 humidity_rh = sht31.relative_humidity
             except Exception as e:
-                # if SHT31 errors, skip this cycle
                 print("SHT31 read error:", e)
                 temp_c = None
                 humidity_rh = None
-
+                
     # --- BLE state machine ---
     if not advertised:
         ble.start_advertising(advertisement)
