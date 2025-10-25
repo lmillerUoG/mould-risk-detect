@@ -18,6 +18,7 @@ import adafruit_sht31d
 # ----------- Config -----------------------
 DEVICE_ID = "21399066"
 SAMPLE_HZ = 1.0     # sampling frequency
+USE_SIMULATION = True
 
 # ----------- Demo Mode/ Production Mode -----------------------
 DEMO_MODE = True
@@ -42,40 +43,49 @@ advertised = False
 connected  = False
 
 # ----------- Simulation setup ----------------------------
-USE_SIMULATION = False
-SIM_ROWS = []
-sim_idx = 0
+sim_file = None
 
-try:
-    if "sim_data.csv" in os.listdir("/"):
-        with open("/sim_data.csv") as f:
-            lines = f.readlines()
-
-        for i, line in enumerate(lines):          
-            if i == 0:  # skip header
-                continue
-            line = line.strip()
-            if not line:
-                continue
-            parts = line.split(",")
-            if len(parts) >= 2:
-                try:
-                    t = float(parts[0])
-                    rh = float(parts[1])
-                    SIM_ROWS.append((t, rh))
-                except ValueError:
-                    pass
-
-        if SIM_ROWS:
-            USE_SIMULATION = True
-            print(f"Simulation enabled: {len(SIM_ROWS)} rows loaded.")
+if USE_SIMULATION:
+    try:
+        if "sim_data.csv" in os.listdir("/"):
+            sim_file = open("/sim_data.csv", "r")
+            _ = sim_file.readline()  # skip header
+            print("Simulation enabled: streaming sim_data.csv")
         else:
-            print("sim_data.csv empty/invalid; using real sensors")
+            print("sim_data.csv not found; switching to real sensor mode.")
+            USE_SIMULATION = False
+    except Exception as e:
+        print("Error opening sim_data.csv; switching to real sensor mode. Err:", e)
+        USE_SIMULATION = False
+else:
+    print("Simulation disabled; using real SHT31D sensor.")
 
-    else:
-        print("No sim_data.csv found; using real sensors.")
-except Exception as e:
-    print("Error loading sim_data.csv; using real sensors. Err: ", e)
+def sim_next_row():
+    """
+    Return (temp_c, rh_pct) from the next line; loop to start at EOF.
+    """
+    global sim_file
+    if sim_file is None:
+        return None
+    line = sim_file.readline()
+    if not line: # end of file
+        try:
+            sim_file.seek(0)
+            _ = sim_file.readline()
+            line = sim_file.readline()
+        except Exception:
+            return None
+        if not line:
+            return None
+    parts = line.strip().split(",")
+    if len(parts) < 2:
+        return sim_next_row()
+    try:
+        t = float(parts[0])
+        rh = float(parts[1])
+        return (t, rh)
+    except ValueError:
+        return sim_next_row()
 
 # ----------- Timing setup ---------------------------
 # The sensor sampling rate is precisely regulated using the following timer variables.
