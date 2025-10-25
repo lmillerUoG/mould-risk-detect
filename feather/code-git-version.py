@@ -142,7 +142,7 @@ while True:
                 print("SHT31 read error:", e)
                 temp_c = None
                 humidity_rh = None
-                
+
     # --- BLE state machine ---
     if not advertised:
         ble.start_advertising(advertisement)
@@ -167,5 +167,8 @@ while True:
                 ts_ms = int(time.monotonic()*1000)
                
                 uart.write(b"%d,%.3f,%.3f,%.3f,%.3f\n" % (ts_ms, temp_c, humidity_rh, td, dpd))
+            
+                # USB serial print
+                print("{},{:.3f},{:.3f},{:.3f},{:.3f}".format(ts_ms, temp_c, humidity_rh, td, dpd))
             except Exception as e:
                 print("UART write error:", e)

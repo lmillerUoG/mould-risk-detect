@@ -15,24 +15,33 @@ print("Logging started...")
 
 with open(OUT_FILE, "w", newline="") as f:
     writer = csv.writer(f)
-    writer.writerow(["iso_time","t_c","rh_pct","td_c","dpd_c","risk"])
+    writer.writerow(["iso_time", "timestamp_ms", "t_c", "rh_pct", "td_c", "dpd_c", "device_id"])
     try:
         while True:
             line = ser.readline().decode("utf-8", "ignore").strip()
-            if not line:
+            if not line or line.startswith("#"):  # skip blank/header lines
                 continue
             parts = line.split(",")
-            if len(parts) == 5:
+            if len(parts) == 6:
                 try:
-                    t, rh, td, dpd, risk = parts
+                    ts_ms, t, rh, td, dpd, device_id = parts
                     writer.writerow([
-                        datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-                        float(t), float(rh), float(td), float(dpd), int(risk)
+                        datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),  # actual UTC time
+                        int(ts_ms),
+                        float(t),
+                        float(rh),
+                        float(td),
+                        float(dpd),
+                        device_id.strip()
                     ])
                     f.flush()
                     print(line)
                 except ValueError:
                     pass
+            else:
+                # optional: print malformed lines for debugging
+                if line:
+                    print(f"Ignored line: {line}")
     except KeyboardInterrupt:
         print("\nLogging stopped by user.")
 
