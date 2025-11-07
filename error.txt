@@ -1,0 +1,90 @@
+Traceback (most recent call last):
+  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/common/auth/connection_string.py", line 41, in _parse_connection_string
+    d = dict(arg.split(CS_VAL_SEPARATOR, 1) for arg in cs_args)
+ValueError: dictionary update sequence element #1 has length 1; 2 is required
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/gateway_iothub.py", line 71, in <module>
+    main()
+    ~~~~^^
+  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/gateway_iothub.py", line 58, in main
+    client = IoTHubDeviceClient.create_from_connection_string(CONNECTION_STRING)
+  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/patch_documentation.py", line 84, in create_from_connection_string
+    return super(IoTHubDeviceClient, cls).create_from_connection_string(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        connection_string, **kwargs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/iothub/abstract_clients.py", line 303, in create_from_connection_string
+    connection_string_dict = cs.ConnectionString(connection_string)
+  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/common/auth/connection_string.py", line 86, in __init__
+    self._dict = _parse_connection_string(connection_string)
+                 ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/common/auth/connection_string.py", line 45, in _parse_connection_string
+    raise ValueError("Invalid Connection String - Unable to parse")
+ValueError: Invalid Connection String - Unable to parse
+(env) pi21399066@21399066:~/Documents/ee5127/mould-risk-detect $ python gateway_iothub.py
+IoT Hub Quickstart #1 - Simulated device
+Press Ctrl-C to exit
+Traceback (most recent call last):
+  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/common/auth/connection_string.py", line 41, in _parse_connection_string
+    d = dict(arg.split(CS_VAL_SEPARATOR, 1) for arg in cs_args)
+ValueError: dictionary update sequence element #0 has length 1; 2 is required
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/gateway_iothub.py", line 71, in <module>
+    main()
+    ~~~~^^
+  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/gateway_iothub.py", line 58, in main
+    client = IoTHubDeviceClient.create_from_connection_string("IOTHUB_DEVICE_CONNECTION_STRING")
+  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/patch_documentation.py", line 84, in create_from_connection_string
+    return super(IoTHubDeviceClient, cls).create_from_connection_string(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        connection_string, **kwargs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/iothub/abstract_clients.py", line 303, in create_from_connection_string
+    connection_string_dict = cs.ConnectionString(connection_string)
+  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/common/auth/connection_string.py", line 86, in __init__
+    self._dict = _parse_connection_string(connection_string)
+                 ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/common/auth/connection_string.py", line 45, in _parse_connection_string
+    raise ValueError("Invalid Connection String - Unable to parse")
+ValueError: Invalid Connection String - Unable to parse
+(env) pi21399066@21399066:~/Documents/ee5127/mould-risk-detect $ python gateway_iothub.py
+IoT Hub Quickstart #1 - Simulated device
+Press Ctrl-C to exit
+Traceback (most recent call last):
+  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/common/auth/connection_string.py", line 41, in _parse_connection_string
+    d = dict(arg.split(CS_VAL_SEPARATOR, 1) for arg in cs_args)
+ValueError: dictionary update sequence element #1 has length 1; 2 is required
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/gateway_iothub.py", line 71, in <module>
+    main()
+    ~~~~^^
+  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/gateway_iothub.py", line 58, in main
+    client = IoTHubDeviceClient.create_from_connection_string(CONNECTION_STRING)
+  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/patch_documentation.py", line 84, in create_from_connection_string
+    return super(IoTHubDeviceClient, cls).create_from_connection_string(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        connection_string, **kwargs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/iothub/abstract_clients.py", line 303, in create_from_connection_string
+    connection_string_dict = cs.ConnectionString(connection_string)
+  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/common/auth/connection_string.py", line 86, in __init__
+    self._dict = _parse_connection_string(connection_string)
+                 ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/common/auth/connection_string.py", line 45, in _parse_connection_string
+    raise ValueError("Invalid Connection String - Unable to parse")
+ValueError: Invalid Connection String - Unable to parse
