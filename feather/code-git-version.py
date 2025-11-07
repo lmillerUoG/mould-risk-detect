@@ -16,7 +16,7 @@ from adafruit_ble.services.nordic import UARTService
 import adafruit_sht31d
 
 # ----------- Config -----------------------
-DEVICE_ID = "21399066"
+DEVICE_ID = "MRD213"
 SAMPLE_HZ = 1.0     # sampling frequency
 USE_SIMULATION = True
 
@@ -167,8 +167,6 @@ while True:
                 ts_ms = int(time.monotonic()*1000)
                
                 uart.write(b"%d,%.3f,%.3f,%.3f,%.3f\n" % (ts_ms, temp_c, humidity_rh, td, dpd))
-            
-                # USB serial print
-                print("{},{:.3f},{:.3f},{:.3f},{:.3f}".format(ts_ms, temp_c, humidity_rh, td, dpd))
+        
             except Exception as e:
                 print("UART write error:", e)
