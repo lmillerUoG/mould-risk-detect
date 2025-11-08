@@ -1,90 +1,61 @@
-Traceback (most recent call last):
-  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/common/auth/connection_string.py", line 41, in _parse_connection_string
-    d = dict(arg.split(CS_VAL_SEPARATOR, 1) for arg in cs_args)
-ValueError: dictionary update sequence element #1 has length 1; 2 is required
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/gateway_iothub.py", line 71, in <module>
-    main()
-    ~~~~^^
-  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/gateway_iothub.py", line 58, in main
-    client = IoTHubDeviceClient.create_from_connection_string(CONNECTION_STRING)
-  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/patch_documentation.py", line 84, in create_from_connection_string
-    return super(IoTHubDeviceClient, cls).create_from_connection_string(
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
-        connection_string, **kwargs
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/iothub/abstract_clients.py", line 303, in create_from_connection_string
-    connection_string_dict = cs.ConnectionString(connection_string)
-  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/common/auth/connection_string.py", line 86, in __init__
-    self._dict = _parse_connection_string(connection_string)
-                 ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
-  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/common/auth/connection_string.py", line 45, in _parse_connection_string
-    raise ValueError("Invalid Connection String - Unable to parse")
-ValueError: Invalid Connection String - Unable to parse
 (env) pi21399066@21399066:~/Documents/ee5127/mould-risk-detect $ python gateway_iothub.py
 IoT Hub Quickstart #1 - Simulated device
 Press Ctrl-C to exit
+IoT Hub device sending periodic messages
+Shutting down IoTHubClient
 Traceback (most recent call last):
-  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/common/auth/connection_string.py", line 41, in _parse_connection_string
-    d = dict(arg.split(CS_VAL_SEPARATOR, 1) for arg in cs_args)
-ValueError: dictionary update sequence element #0 has length 1; 2 is required
+  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/env/lib/python3.13/site-packages/azure/iot/device/common/mqtt_transport.py", line 396, in connect
+    rc = self._mqtt_client.connect(
+        host=self._hostname, port=8883, keepalive=self._keep_alive
+    )
+  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/env/lib/python3.13/site-packages/paho/mqtt/client.py", line 914, in connect
+    return self.reconnect()
+           ~~~~~~~~~~~~~~^^
+  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/env/lib/python3.13/site-packages/paho/mqtt/client.py", line 1044, in reconnect
+    sock = self._create_socket_connection()
+  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/env/lib/python3.13/site-packages/paho/mqtt/client.py", line 3685, in _create_socket_connection
+    return socket.create_connection(addr, timeout=self._connect_timeout, source_address=source)
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/socket.py", line 864, in create_connection
+    raise exceptions[0]
+  File "/usr/lib/python3.13/socket.py", line 849, in create_connection
+    sock.connect(sa)
+    ~~~~~~~~~~~~^^^^
+TimeoutError: timed out
 
-During handling of the above exception, another exception occurred:
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/env/lib/python3.13/site-packages/azure/iot/device/iothub/sync_clients.py", line 36, in handle_result
+    return callback.wait_for_completion()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/env/lib/python3.13/site-packages/azure/iot/device/common/evented_callback.py", line 69, in wait_for_completion
+    raise self.exception
+  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/env/lib/python3.13/site-packages/azure/iot/device/common/pipeline/pipeline_stages_mqtt.py", line 206, in _run_op
+    self.transport.connect(password=password)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/env/lib/python3.13/site-packages/azure/iot/device/common/mqtt_transport.py", line 419, in connect
+    raise exceptions.ConnectionFailedError() from e
+azure.iot.device.common.transport_exceptions.ConnectionFailedError
+
+The above exception was the direct cause of the following exception:
 
 Traceback (most recent call last):
   File "/home/pi21399066/Documents/ee5127/mould-risk-detect/gateway_iothub.py", line 71, in <module>
     main()
     ~~~~^^
-  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/gateway_iothub.py", line 58, in main
-    client = IoTHubDeviceClient.create_from_connection_string("IOTHUB_DEVICE_CONNECTION_STRING")
-  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/patch_documentation.py", line 84, in create_from_connection_string
-    return super(IoTHubDeviceClient, cls).create_from_connection_string(
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
-        connection_string, **kwargs
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/iothub/abstract_clients.py", line 303, in create_from_connection_string
-    connection_string_dict = cs.ConnectionString(connection_string)
-  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/common/auth/connection_string.py", line 86, in __init__
-    self._dict = _parse_connection_string(connection_string)
-                 ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
-  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/common/auth/connection_string.py", line 45, in _parse_connection_string
-    raise ValueError("Invalid Connection String - Unable to parse")
-ValueError: Invalid Connection String - Unable to parse
-(env) pi21399066@21399066:~/Documents/ee5127/mould-risk-detect $ python gateway_iothub.py
-IoT Hub Quickstart #1 - Simulated device
-Press Ctrl-C to exit
-Traceback (most recent call last):
-  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/common/auth/connection_string.py", line 41, in _parse_connection_string
-    d = dict(arg.split(CS_VAL_SEPARATOR, 1) for arg in cs_args)
-ValueError: dictionary update sequence element #1 has length 1; 2 is required
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/gateway_iothub.py", line 71, in <module>
-    main()
-    ~~~~^^
-  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/gateway_iothub.py", line 58, in main
-    client = IoTHubDeviceClient.create_from_connection_string(CONNECTION_STRING)
-  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/patch_documentation.py", line 84, in create_from_connection_string
-    return super(IoTHubDeviceClient, cls).create_from_connection_string(
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
-        connection_string, **kwargs
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/iothub/abstract_clients.py", line 303, in create_from_connection_string
-    connection_string_dict = cs.ConnectionString(connection_string)
-  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/common/auth/connection_string.py", line 86, in __init__
-    self._dict = _parse_connection_string(connection_string)
-                 ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
-  File "/home/pi21399066/Documents/ee5127/env/lib/python3.13/site-packages/azure/iot/device/common/auth/connection_string.py", line 45, in _parse_connection_string
-    raise ValueError("Invalid Connection String - Unable to parse")
-ValueError: Invalid Connection String - Unable to parse
+  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/gateway_iothub.py", line 62, in main
+    run_telemetry_sample(client)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/gateway_iothub.py", line 29, in run_telemetry_sample
+    client.connect()
+    ~~~~~~~~~~~~~~^^
+  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/env/lib/python3.13/site-packages/azure/iot/device/patch_documentation.py", line 14, in connect
+    return super(IoTHubDeviceClient, self).connect()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/env/lib/python3.13/site-packages/azure/iot/device/iothub/sync_clients.py", line 229, in connect
+    handle_result(callback)
+    ~~~~~~~~~~~~~^^^^^^^^^^
+  File "/home/pi21399066/Documents/ee5127/mould-risk-detect/env/lib/python3.13/site-packages/azure/iot/device/iothub/sync_clients.py", line 40, in handle_result
+    raise exceptions.ConnectionFailedError("Could not connect to IoTHub") from e
+azure.iot.device.exceptions.ConnectionFailedError: Could not connect to IoTHub
